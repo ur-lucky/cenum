@@ -67,7 +67,7 @@ impl SolverEmitter for NewSolverEmitter {
         line(output, 0, "}");
         output.push('\n');
 
-        line(output, 0, &format!("{keyword} {}: {enum_set_alias}", enum_def.name));
+        line(output, 0, &format!("local {}: {enum_set_alias}", enum_def.name));
         line(output, 0, "do");
         line(output, 1, &format!("{} = {{", enum_def.name));
         for (index, item) in enum_def.items.iter().enumerate() {
