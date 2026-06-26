@@ -74,11 +74,10 @@ mod tests {
     use crate::model::{EnumDef, Solver};
     use std::path::PathBuf;
 
-    fn options(solver: Solver, use_const: bool) -> BuildOptions {
+    fn options(solver: Solver) -> BuildOptions {
         BuildOptions {
             output: PathBuf::from("Enums.luau"),
             solver,
-            use_const,
             enums: vec![
                 EnumDef {
                     name: "TransactionType".to_owned(),

@@ -82,13 +82,11 @@ enums:
             BuildOverrides {
                 output: Some(PathBuf::from("override.luau")),
                 solver: Some(Solver::New),
-                use_const: Some(true),
             },
         )
         .unwrap();
 
         assert_eq!(options.output, PathBuf::from("override.luau"));
         assert_eq!(options.solver, Solver::New);
-        assert!(options.use_const);
     }
 }

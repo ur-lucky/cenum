@@ -8,8 +8,8 @@ self-contained Luau module.
 ```sh
 cenum init
 cenum build
-cenum build cenum.yaml --solver new --output src/shared/Enums.luau --use-const
-cenum build cenum.yaml --no-use-const
+cenum build cenum.yaml --solver new --output src/shared/Enums.luau
+cenum build cenum.yaml
 ```
 
 By default, `cenum init` writes `cenum.yaml`, and `cenum build` reads
@@ -21,7 +21,7 @@ solver: old
 enums: {}
 ```
 
-`solver` defaults to `old`, and `use-const` defaults to `false`. `output` is
+`solver` defaults to `old`, and `output` is
 required unless `--output` is passed.
 
 ## Rokit

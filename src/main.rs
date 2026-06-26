@@ -37,14 +37,6 @@ enum Commands {
         /// Override the solver output style.
         #[arg(long, value_enum)]
         solver: Option<Solver>,
-
-        /// Emit const declarations instead of local declarations.
-        #[arg(long, conflicts_with = "no_use_const")]
-        use_const: bool,
-
-        /// Emit local declarations instead of const declarations.
-        #[arg(long, conflicts_with = "use_const")]
-        no_use_const: bool,
     },
 }
 
@@ -60,19 +52,10 @@ fn main() -> Result<()> {
             config,
             output,
             solver,
-            use_const,
-            no_use_const,
         } => {
             let overrides = cenum::BuildOverrides {
                 output,
                 solver,
-                use_const: if use_const {
-                    Some(true)
-                } else if no_use_const {
-                    Some(false)
-                } else {
-                    None
-                },
             };
 
             let output_path = build(&config, overrides)?;
