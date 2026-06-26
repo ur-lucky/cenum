@@ -1,0 +1,13 @@
+output: src/shared/Enums.luau
+solver: old
+use-const: false
+enums:
+  TransactionType:
+    - Robux
+    - Tickets
+    - Diamonds
+    - Gold
+  TransactionStatus:
+    - Pending
+    - Completed
+    - Failed
