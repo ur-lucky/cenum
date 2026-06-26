@@ -10,6 +10,33 @@ use std::path::{Path, PathBuf};
 pub use config::{BuildOptions, BuildOverrides};
 pub use model::{EnumDef, Solver};
 
+pub const DEFAULT_CONFIG: &str = r#"output: src/shared/CEnums.luau
+solver: old
+enums: {}
+"#;
+
+pub fn init_config(config_path: &Path, force: bool) -> Result<PathBuf> {
+    if config_path.exists() && !force {
+        anyhow::bail!(
+            "config {} already exists; pass `--force` to overwrite it",
+            config_path.display()
+        );
+    }
+
+    if let Some(parent) = config_path.parent() {
+        if !parent.as_os_str().is_empty() {
+            fs::create_dir_all(parent).with_context(|| {
+                format!("failed to create config directory {}", parent.display())
+            })?;
+        }
+    }
+
+    fs::write(config_path, DEFAULT_CONFIG)
+        .with_context(|| format!("failed to write config {}", config_path.display()))?;
+
+    Ok(config_path.to_path_buf())
+}
+
 pub fn build(config_path: &Path, overrides: BuildOverrides) -> Result<PathBuf> {
     let contents = fs::read_to_string(config_path)
         .with_context(|| format!("failed to read config {}", config_path.display()))?;

@@ -6,27 +6,19 @@ self-contained Luau module.
 ## Usage
 
 ```sh
+cenum init
 cenum build
 cenum build cenum.yaml --solver new --output src/shared/Enums.luau --use-const
 cenum build cenum.yaml --no-use-const
 ```
 
-By default, `cenum build` reads `cenum.yaml`.
+By default, `cenum init` writes `cenum.yaml`, and `cenum build` reads
+`cenum.yaml`.
 
 ```yaml
-output: src/shared/Enums.luau
+output: src/shared/CEnums.luau
 solver: old
-use-const: false
-enums:
-  TransactionType:
-    - Robux
-    - Tickets
-    - Diamonds
-    - Gold
-  TransactionStatus:
-    - Pending
-    - Completed
-    - Failed
+enums: {}
 ```
 
 `solver` defaults to `old`, and `use-const` defaults to `false`. `output` is
@@ -65,3 +57,7 @@ git push origin v0.1.0
 
 The workflow creates a draft GitHub release with assets named like
 `cenum-0.1.0-windows-x86_64.zip`.
+
+If a release already exists, run the `Release` workflow manually with the existing
+tag, such as `v0.1.0`. The workflow will rebuild every platform archive and
+upload them to that release with replacement enabled.

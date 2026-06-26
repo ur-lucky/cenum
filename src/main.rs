@@ -13,6 +13,17 @@ struct Cli {
 
 #[derive(Debug, Subcommand)]
 enum Commands {
+    /// Create a starter cenum.yaml config file.
+    Init {
+        /// Path to write the YAML config file.
+        #[arg(default_value = "cenum.yaml")]
+        config: PathBuf,
+
+        /// Overwrite the config file if it already exists.
+        #[arg(long)]
+        force: bool,
+    },
+
     /// Compile YAML enum definitions into a Luau module.
     Build {
         /// Path to the YAML config file.
@@ -41,6 +52,10 @@ fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
+        Commands::Init { config, force } => {
+            let config_path = cenum::init_config(&config, force)?;
+            println!("Created {}", config_path.display());
+        }
         Commands::Build {
             config,
             output,
