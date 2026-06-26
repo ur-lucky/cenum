@@ -8,7 +8,6 @@ use std::path::PathBuf;
 pub struct RawConfig {
     pub output: Option<PathBuf>,
     pub solver: Option<Solver>,
-    pub use_const: Option<bool>,
     pub enums: Vec<EnumDef>,
 }
 
@@ -16,14 +15,12 @@ pub struct RawConfig {
 pub struct BuildOverrides {
     pub output: Option<PathBuf>,
     pub solver: Option<Solver>,
-    pub use_const: Option<bool>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct BuildOptions {
     pub output: PathBuf,
     pub solver: Solver,
-    pub use_const: bool,
     pub enums: Vec<EnumDef>,
 }
 
@@ -37,17 +34,12 @@ impl BuildOptions {
         Ok(Self {
             output,
             solver: overrides.solver.or(raw.solver).unwrap_or(Solver::Old),
-            use_const: overrides.use_const.or(raw.use_const).unwrap_or(false),
             enums: raw.enums,
         })
     }
 
     pub fn declaration_keyword(&self) -> &'static str {
-        if self.use_const {
-            "const"
-        } else {
-            "local"
-        }
+       "const"
     }
 }
 
@@ -71,9 +63,6 @@ pub fn parse_yaml(input: &str) -> Result<RawConfig> {
                     Solver::parse(&solver)
                         .with_context(|| format!("invalid solver `{solver}`; expected `old` or `new`"))?,
                 );
-            }
-            "use-const" | "use_const" => {
-                raw.use_const = Some(bool_value(&value, &key)?);
             }
             "enums" => {
                 let enums = enum_map(&value, "enums")?;
@@ -164,7 +153,6 @@ mod tests {
             r#"
 output: src/shared/Enums.luau
 solver: new
-use-const: true
 enums:
   TransactionType:
     - Robux
@@ -175,7 +163,6 @@ enums:
 
         assert_eq!(raw.output, Some(PathBuf::from("src/shared/Enums.luau")));
         assert_eq!(raw.solver, Some(Solver::New));
-        assert_eq!(raw.use_const, Some(true));
         assert_eq!(raw.enums[0].name, "TransactionType");
         assert_eq!(raw.enums[0].items, vec!["Robux", "Tickets"]);
     }
