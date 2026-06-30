@@ -24,6 +24,21 @@ enums: {}
 `solver` defaults to `old`, and `output` is
 required unless `--output` is passed.
 
+Generated modules include lightweight enum serialization helpers:
+
+```luau
+local Enums = require(path.to.Enums)
+
+local payload = Enums:serialize(Enums.TransactionStatus.Completed)
+local status = Enums:deserialize(payload)
+```
+
+Enum items serialize to tagged plain data like
+`{ __syncType = "CustomEnum", enumName = "TransactionStatus", value = 2 }`.
+Tables are serialized recursively, and tables with enum/table keys are encoded
+as tagged maps so they can be sent through remotes or saved in DataStores
+without enum metatables, cycles, or back-references.
+
 ## Rokit
 
 After publishing release artifacts for this repository, consumers can add it to a

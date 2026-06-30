@@ -39,7 +39,7 @@ impl BuildOptions {
     }
 
     pub fn declaration_keyword(&self) -> &'static str {
-       "const"
+        "const"
     }
 }
 
@@ -133,13 +133,6 @@ fn string_value(value: &Value, path: &str) -> Result<String> {
     match value {
         Value::String(value) => Ok(value.clone()),
         _ => bail!("`{path}` must be a string"),
-    }
-}
-
-fn bool_value(value: &Value, path: &str) -> Result<bool> {
-    match value {
-        Value::Bool(value) => Ok(*value),
-        _ => bail!("`{path}` must be a boolean"),
     }
 }
 

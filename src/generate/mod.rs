@@ -26,6 +26,8 @@ pub fn generate(options: &BuildOptions) -> String {
     }
 
     output.push_str("return table.freeze({\n");
+    line(&mut output, 1, "serialize = __CEnumSerialize,");
+    line(&mut output, 1, "deserialize = __CEnumDeserialize,");
     for enum_def in &options.enums {
         line(&mut output, 1, &format!("{} = {},", enum_def.name, enum_def.name));
     }
@@ -93,15 +95,29 @@ mod tests {
 
     #[test]
     fn old_solver_exports_types_and_returns_table() {
-        let output = generate(&options(Solver::Old, false));
+        let output = generate(&options(Solver::Old));
 
         assert!(output.contains("type __CEnumEnumItem = {"));
         assert!(!output.starts_with("--!strict\n"));
         assert!(output.contains("type __CEnumEnumSet = {"));
+        assert!(output.contains("type __CEnumSerializedEnumItem = {"));
+        assert!(output.contains("type __CEnumSerializedPrimitive = nil | boolean | number | string"));
+        assert!(output.contains("type __CEnumSerializedValue = __CEnumSerializedPrimitive"));
+        assert!(output.contains("__syncType: \"CustomEnum\","));
+        assert!(output.contains("type __CEnumSerializedMap = {"));
         assert!(output.contains("type __CEnumEnumItemData = {"));
         assert!(output.contains("__CEnumEnumItemMap.__tostring = function(self: __CEnumEnumItemData): string"));
         assert!(output.contains("function __CEnumEnumItemMap.IsA(self: __CEnumEnumItemData, category: string): boolean"));
-        assert!(output.contains("local __CEnumEnumSetMethods = {}"));
+        assert!(output.contains("const __CEnumEnumSetMethods = {}"));
+        assert!(output.contains("const __CEnumCustomEnumSyncType = \"CustomEnum\""));
+        assert!(output.contains("const __CEnumMapSyncType = \"Map\""));
+        assert!(output.contains(
+            "const function __CEnumSerialize(_: any, value: any): __CEnumSerializedValue"
+        ));
+        assert!(output
+            .contains("const function __CEnumDeserialize(enums: { [string]: any }, value: unknown): unknown"));
+        assert!(output.contains("error(\"cannot serialize cyclic table\", 2)"));
+        assert!(output.contains("serializedTable.__syncType == __CEnumCustomEnumSyncType"));
         assert!(output.contains("local result: { [string]: __CEnumEnumItem } = {}"));
         assert!(!output.contains("export type EnumSet<EnumType, Item = string>"));
         assert!(!output.contains("export type EnumItem<EnumType, Item = string>"));
@@ -125,26 +141,28 @@ mod tests {
         assert!(!output.contains("export type TransactionType = __CEnumTransactionTypeItem<"));
         assert!(output.contains("type __CEnumTransactionTypeSet = {"));
         assert!(output.contains("local TransactionType: __CEnumTransactionTypeSet"));
-        assert!(output.contains("do\n\tTransactionType = {"));
-        assert!(output.contains("Tickets = table.freeze(setmetatable({"));
-        assert!(output.contains("EnumType = TransactionType,"));
+        assert!(output.contains("local TransactionType: __CEnumTransactionTypeSet = __CEnumNew("));
+        assert!(output.contains("\t\"TransactionType\","));
+        assert!(output.contains("\t\t\"Tickets\","));
+        assert!(!output.contains("Tickets = table.freeze(setmetatable({"));
         assert!(output.contains("Tickets: __CEnumTransactionTypeTicketsItem,"));
-        assert!(output.contains("\t} :: any\nend"));
         assert!(!output.contains(")) :: __CEnumTransactionTypeItem"));
         assert!(!output.contains("(TransactionType.Tickets :: any).EnumType = TransactionType"));
-        assert!(output.contains("setmetatable(TransactionType, __CEnumEnumSetMetatable)"));
-        assert!(output.contains("table.freeze(TransactionType)"));
+        assert!(!output.contains("setmetatable(TransactionType, __CEnumEnumSetMetatable)"));
+        assert!(!output.contains("table.freeze(TransactionType)"));
         assert!(!output.contains("setmetatable(TransactionType :: any"));
         assert!(!output.contains("__CEnumTransactionTypeType"));
         assert!(!output.contains("typeof(__CEnumTransactionTypeType)"));
         assert!(!output.contains("__CEnumTransactionTypeItems"));
+        assert!(output.contains("\tserialize = __CEnumSerialize,"));
+        assert!(output.contains("\tdeserialize = __CEnumDeserialize,"));
         assert!(output.contains("TransactionStatus = TransactionStatus,"));
         assert!(!output.contains("local __CEnumEnumMap ="));
     }
 
     #[test]
     fn new_solver_uses_item_name_alias() {
-        let output = generate(&options(Solver::New, false));
+        let output = generate(&options(Solver::New));
 
         assert!(output.contains("type __CEnumTransactionTypeItemName = \"Robux\" | \"Tickets\""));
         assert!(output.contains(
@@ -154,8 +172,8 @@ mod tests {
     }
 
     #[test]
-    fn use_const_changes_declaration_keyword() {
-        let output = generate(&options(Solver::Old, true));
+    fn runtime_helpers_use_const_declarations() {
+        let output = generate(&options(Solver::Old));
 
         assert!(output.contains("const __CEnumEnumItemMap = {}"));
         assert!(output.contains("const function __CEnumNew"));

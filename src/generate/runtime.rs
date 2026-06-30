@@ -20,6 +20,26 @@ type __CEnumEnumSet = {
 	GetEnumItems: (self: any) -> { __CEnumEnumItem },
 }
 
+type __CEnumSerializedPrimitive = nil | boolean | number | string
+
+type __CEnumSerializedEnumItem = {
+	__syncType: "CustomEnum",
+	enumName: string,
+	value: number,
+}
+
+type __CEnumSerializedValue = __CEnumSerializedPrimitive | __CEnumSerializedEnumItem | __CEnumSerializedMap | { [any]: unknown }
+
+type __CEnumSerializedMapEntry = {
+	key: __CEnumSerializedValue,
+	value: __CEnumSerializedValue,
+}
+
+type __CEnumSerializedMap = {
+	__syncType: "Map",
+	entries: { __CEnumSerializedMapEntry },
+}
+
 type __CEnumEnumItemData = {
 	Name: string,
 	Value: number,
@@ -80,6 +100,240 @@ __CEnumEnumSetMethods.GetEnumItems = function(self: { [string]: __CEnumEnumItem 
 	return enumItems
 end
 table.freeze(__CEnumEnumSetMethods)
+
+"#,
+    );
+    line(
+        output,
+        0,
+        &format!("{keyword} __CEnumCustomEnumSyncType = \"CustomEnum\""),
+    );
+    line(
+        output,
+        0,
+        &format!("{keyword} __CEnumMapSyncType = \"Map\""),
+    );
+    output.push('\n');
+    line(
+        output,
+        0,
+        &format!("{keyword} function __CEnumIsPrimitiveKey(value: any): boolean"),
+    );
+    output.push_str(
+        r#"	local valueType = type(value)
+	return valueType == "number" or valueType == "string"
+end
+
+"#,
+    );
+    line(
+        output,
+        0,
+        &format!(
+            "{keyword} function __CEnumGetSerializedEnumItem(value: any): __CEnumSerializedEnumItem?"
+        ),
+    );
+    output.push_str(
+        r#"	if type(value) ~= "table" or getmetatable(value) ~= __CEnumEnumItemMap then
+		return nil
+	end
+
+	local enumTypeName = value._enumTypeName
+	local enumValue = value.Value
+	if type(enumTypeName) ~= "string" or type(enumValue) ~= "number" then
+		return nil
+	end
+
+	return {
+		__syncType = __CEnumCustomEnumSyncType,
+		enumName = enumTypeName,
+		value = enumValue,
+	}
+end
+
+"#,
+    );
+    line(
+        output,
+        0,
+        &format!(
+            "{keyword} function __CEnumSerializeValue(value: any, seen: {{ [any]: boolean }}): __CEnumSerializedValue"
+        ),
+    );
+    output.push_str(
+        r#"	local serializedEnumItem = __CEnumGetSerializedEnumItem(value)
+	if serializedEnumItem ~= nil then
+		return serializedEnumItem
+	end
+
+	if type(value) ~= "table" then
+		return value
+	end
+
+	if seen[value] then
+		error("cannot serialize cyclic table", 2)
+	end
+
+	seen[value] = true
+
+	local serializedTable: { [any]: __CEnumSerializedValue } = {}
+	local serializedEntries: { __CEnumSerializedMapEntry } = {}
+	local shouldUseMap = false
+
+	for key, entryValue in value do
+		local serializedKey = __CEnumSerializeValue(key, seen)
+		local serializedEntryValue = __CEnumSerializeValue(entryValue, seen)
+
+		serializedEntries[#serializedEntries + 1] = {
+			key = serializedKey,
+			value = serializedEntryValue,
+		}
+
+		if serializedKey ~= key or not __CEnumIsPrimitiveKey(serializedKey) then
+			shouldUseMap = true
+		else
+			serializedTable[serializedKey] = serializedEntryValue
+		end
+	end
+
+	if serializedTable.__syncType == __CEnumCustomEnumSyncType or serializedTable.__syncType == __CEnumMapSyncType then
+		shouldUseMap = true
+	end
+
+	seen[value] = nil
+
+	if shouldUseMap then
+		return {
+			__syncType = __CEnumMapSyncType,
+			entries = serializedEntries,
+		}
+	end
+
+	return serializedTable
+end
+
+"#,
+    );
+    line(
+        output,
+        0,
+        &format!("{keyword} function __CEnumSerialize(_: any, value: any): __CEnumSerializedValue"),
+    );
+    output.push_str(
+        r#"	return __CEnumSerializeValue(value, {})
+end
+
+"#,
+    );
+    line(
+        output,
+        0,
+        &format!("{keyword} function __CEnumIsSerializedEnumItem(value: {{ [any]: any }}): boolean"),
+    );
+    output.push_str(
+        r#"	return value.__syncType == __CEnumCustomEnumSyncType
+		and type(value.enumName) == "string"
+		and type(value.value) == "number"
+end
+
+"#,
+    );
+    line(
+        output,
+        0,
+        &format!("{keyword} function __CEnumIsSerializedMap(value: {{ [any]: any }}): boolean"),
+    );
+    output.push_str(
+        r#"	return value.__syncType == __CEnumMapSyncType and type(value.entries) == "table"
+end
+
+"#,
+    );
+    line(
+        output,
+        0,
+        &format!(
+            "{keyword} function __CEnumDeserializeEnumItem(enums: {{ [string]: any }}, serializedEnumItem: __CEnumSerializedEnumItem): __CEnumEnumItem?"
+        ),
+    );
+    output.push_str(
+        r#"	local enumSet = enums[serializedEnumItem.enumName]
+	if type(enumSet) ~= "table" then
+		return nil
+	end
+
+	local enumItem = enumSet:FromValue(serializedEnumItem.value)
+	if type(enumItem) ~= "table" or getmetatable(enumItem) ~= __CEnumEnumItemMap then
+		return nil
+	end
+
+	return enumItem
+end
+
+"#,
+    );
+    line(
+        output,
+        0,
+        &format!("{keyword} function __CEnumDeserializeValue(enums: {{ [string]: any }}, value: unknown): unknown"),
+    );
+    output.push_str(
+        r#"	if type(value) ~= "table" then
+		return value
+	end
+
+	local tableValue = value :: { [any]: any }
+
+	if __CEnumIsSerializedEnumItem(tableValue) then
+		return __CEnumDeserializeEnumItem(enums, tableValue :: __CEnumSerializedEnumItem)
+	end
+
+	if __CEnumIsSerializedMap(tableValue) then
+		local mapValue = tableValue :: __CEnumSerializedMap
+		local deserializedMap = {}
+
+		for _, entry in mapValue.entries do
+			if type(entry) == "table" then
+				local deserializedKey = __CEnumDeserializeValue(enums, entry.key)
+				local deserializedValue = __CEnumDeserializeValue(enums, entry.value)
+
+				if deserializedKey ~= nil and deserializedValue ~= nil then
+					deserializedMap[deserializedKey] = deserializedValue
+				end
+			end
+		end
+
+		return deserializedMap
+	end
+
+	local deserializedTable = {}
+
+	for key, entryValue in tableValue do
+		local deserializedKey = __CEnumDeserializeValue(enums, key)
+		local deserializedValue = __CEnumDeserializeValue(enums, entryValue)
+
+		if deserializedKey ~= nil and deserializedValue ~= nil then
+			deserializedTable[deserializedKey] = deserializedValue
+		end
+	end
+
+	return deserializedTable
+end
+
+"#,
+    );
+    line(
+        output,
+        0,
+        &format!("{keyword} function __CEnumDeserialize(enums: {{ [string]: any }}, value: unknown): unknown"),
+    );
+    output.push_str(
+        r#"	if type(value) == "table" and getmetatable(value :: any) == __CEnumEnumItemMap then
+		return value
+	end
+
+	return __CEnumDeserializeValue(enums, value)
+end
 
 "#,
     );

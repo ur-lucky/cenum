@@ -29,7 +29,12 @@ const LUAU_KEYWORDS: &[&str] = &[
     "continue",
 ];
 
-const RESERVED_ENUM_NAMES: &[&str] = &["EnumSet", "EnumItem"];
+const RESERVED_ENUM_NAMES: &[&str] = &[
+    "EnumSet",
+    "EnumItem",
+    "serialize",
+    "deserialize",
+];
 const RESERVED_ITEM_NAMES: &[&str] = &["FromName", "FromValue", "GetEnumItems"];
 
 pub fn validate_options(options: &BuildOptions) -> Result<()> {
@@ -41,7 +46,9 @@ pub fn validate_options(options: &BuildOptions) -> Result<()> {
     for enum_def in &options.enums {
         validate_identifier(&enum_def.name, "enum")?;
 
-        if enum_def.name.starts_with("__CEnum") || RESERVED_ENUM_NAMES.contains(&enum_def.name.as_str()) {
+        if enum_def.name.starts_with("__CEnum")
+            || RESERVED_ENUM_NAMES.contains(&enum_def.name.as_str())
+        {
             bail!("enum name `{}` is reserved", enum_def.name);
         }
 
@@ -122,6 +129,17 @@ mod tests {
     fn rejects_reserved_names() {
         let error = validate_options(&options(vec![EnumDef {
             name: "__CEnumRuntime".to_owned(),
+            items: vec!["Pending".to_owned()],
+        }]))
+        .unwrap_err();
+
+        assert!(error.to_string().contains("reserved"));
+    }
+
+    #[test]
+    fn rejects_enum_names_reserved_for_serdes_methods() {
+        let error = validate_options(&options(vec![EnumDef {
+            name: "serialize".to_owned(),
             items: vec!["Pending".to_owned()],
         }]))
         .unwrap_err();

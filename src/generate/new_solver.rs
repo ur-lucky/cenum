@@ -6,8 +6,7 @@ use super::{enum_item_name_alias, enum_set_alias, line, string_literal, SolverEm
 pub struct NewSolverEmitter;
 
 impl SolverEmitter for NewSolverEmitter {
-    fn emit_enum(&self, output: &mut String, enum_def: &EnumDef, options: &BuildOptions) {
-        let keyword = options.declaration_keyword();
+    fn emit_enum(&self, output: &mut String, enum_def: &EnumDef, _options: &BuildOptions) {
         let item_name_alias = enum_item_name_alias(enum_def);
         let enum_set_alias = enum_set_alias(enum_def);
 
@@ -67,21 +66,19 @@ impl SolverEmitter for NewSolverEmitter {
         line(output, 0, "}");
         output.push('\n');
 
-        line(output, 0, &format!("local {}: {enum_set_alias}", enum_def.name));
-        line(output, 0, "do");
-        line(output, 1, &format!("{} = {{", enum_def.name));
-        for (index, item) in enum_def.items.iter().enumerate() {
+        line(
+            output,
+            0,
+            &format!("local {}: {enum_set_alias} = __CEnumNew(", enum_def.name),
+        );
+        line(output, 1, &format!("{},", string_literal(&enum_def.name)));
+        line(output, 1, "{");
+        for item in &enum_def.items {
             let item_literal = string_literal(item);
-            line(output, 2, &format!("{item} = table.freeze(setmetatable({{"));
-            line(output, 3, &format!("Name = {item_literal},"));
-            line(output, 3, &format!("Value = {},", index + 1));
-            line(output, 3, &format!("EnumType = {},", enum_def.name));
-            line(output, 2, "}, __CEnumEnumItemMap)),");
+            line(output, 2, &format!("{item_literal},"));
         }
-        line(output, 1, "} :: any");
-        line(output, 0, "end");
+        line(output, 1, "}");
+        line(output, 0, ") :: any");
         output.push('\n');
-        line(output, 0, &format!("setmetatable({}, __CEnumEnumSetMetatable)", enum_def.name));
-        line(output, 0, &format!("table.freeze({})", enum_def.name));
     }
 }
