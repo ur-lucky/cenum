@@ -12,6 +12,7 @@ pub use model::{EnumDef, Solver};
 
 pub const DEFAULT_CONFIG: &str = r#"output: src/shared/CEnums.luau
 solver: old
+use-basic: false
 enums: {}
 "#;
 
@@ -88,5 +89,6 @@ enums:
 
         assert_eq!(options.output, PathBuf::from("override.luau"));
         assert_eq!(options.solver, Solver::New);
+        assert!(!options.use_basic);
     }
 }

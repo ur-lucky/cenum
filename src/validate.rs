@@ -110,6 +110,7 @@ mod tests {
         BuildOptions {
             output: PathBuf::from("out.luau"),
             solver: Solver::Old,
+            use_basic: false,
             enums,
         }
     }

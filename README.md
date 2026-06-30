@@ -18,11 +18,14 @@ By default, `cenum init` writes `cenum.yaml`, and `cenum build` reads
 ```yaml
 output: src/shared/CEnums.luau
 solver: old
+use-basic: false
 enums: {}
 ```
 
 `solver` defaults to `old`, and `output` is
-required unless `--output` is passed.
+required unless `--output` is passed. Set `use-basic: true` to emit simple
+primitive enum values using the `old-solver/uenum.luau` style instead of the
+full enum-item runtime.
 
 Generated modules include lightweight enum serialization helpers:
 
@@ -38,6 +41,10 @@ Enum items serialize to tagged plain data like
 Tables are serialized recursively, and tables with enum/table keys are encoded
 as tagged maps so they can be sent through remotes or saved in DataStores
 without enum metatables, cycles, or back-references.
+
+When `use-basic: true` is enabled, generated modules do not include
+`serialize` or `deserialize`; enum values are numbers keyed by enum item name
+and can be sent across the network directly.
 
 ## Rokit
 

@@ -8,6 +8,7 @@ use std::path::PathBuf;
 pub struct RawConfig {
     pub output: Option<PathBuf>,
     pub solver: Option<Solver>,
+    pub use_basic: Option<bool>,
     pub enums: Vec<EnumDef>,
 }
 
@@ -21,6 +22,7 @@ pub struct BuildOverrides {
 pub struct BuildOptions {
     pub output: PathBuf,
     pub solver: Solver,
+    pub use_basic: bool,
     pub enums: Vec<EnumDef>,
 }
 
@@ -34,6 +36,7 @@ impl BuildOptions {
         Ok(Self {
             output,
             solver: overrides.solver.or(raw.solver).unwrap_or(Solver::Old),
+            use_basic: raw.use_basic.unwrap_or(false),
             enums: raw.enums,
         })
     }
@@ -57,6 +60,7 @@ pub fn parse_yaml(input: &str) -> Result<RawConfig> {
 
         match key.as_str() {
             "output" => raw.output = Some(PathBuf::from(string_value(&value, "output")?)),
+            "use-basic" => raw.use_basic = Some(bool_value(&value, "use-basic")?),
             "solver" => {
                 let solver = string_value(&value, "solver")?;
                 raw.solver = Some(
@@ -136,6 +140,13 @@ fn string_value(value: &Value, path: &str) -> Result<String> {
     }
 }
 
+fn bool_value(value: &Value, path: &str) -> Result<bool> {
+    match value {
+        Value::Bool(value) => Ok(*value),
+        _ => bail!("`{path}` must be a boolean"),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -146,6 +157,7 @@ mod tests {
             r#"
 output: src/shared/Enums.luau
 solver: new
+use-basic: true
 enums:
   TransactionType:
     - Robux
@@ -156,6 +168,7 @@ enums:
 
         assert_eq!(raw.output, Some(PathBuf::from("src/shared/Enums.luau")));
         assert_eq!(raw.solver, Some(Solver::New));
+        assert_eq!(raw.use_basic, Some(true));
         assert_eq!(raw.enums[0].name, "TransactionType");
         assert_eq!(raw.enums[0].items, vec!["Robux", "Tickets"]);
     }
