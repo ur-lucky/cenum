@@ -134,7 +134,7 @@ mod tests {
         assert!(!output.contains("export type EnumSet<EnumType, Item = string>"));
         assert!(!output.contains("export type EnumItem<EnumType, Item = string>"));
         assert!(!output.contains("_items"));
-        assert!(output.contains("local enumItem = self[name]"));
+        assert!(output.contains("const enumItem = self[name]"));
         assert!(output.contains("type __CEnumTransactionTypeItemName = \"Robux\" | \"Tickets\""));
         assert!(!output.contains("type __CEnumTransactionTypeItem = {"));
         assert!(output.contains("type __CEnumTransactionTypeRobuxItem = {"));
